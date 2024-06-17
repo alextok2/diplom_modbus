@@ -171,7 +171,7 @@ class ModbusServerApp:
                     
                     # Flow rate 202 30203 
                     new_flow_rate = get_interpolated_instantaneous_flow_rate() * 100
-                    print(new_flow_rate)
+                    # print(new_flow_rate)
                     self.server.data_bank.set_input_registers(203, [new_flow_rate])
                     # Flow rate(%) 200 30201 
                     procent_flow_rate = 80 * (new_flow_rate / 100) 
@@ -393,7 +393,7 @@ if __name__ == "__main__":
 
     
     
-    app = ModbusServerApp(meter_type="water",ip_address = "127.0.0.1", port = 5002)
+    app = ModbusServerApp(meter_type="water",ip_address = "0.0.0.0", port = 502)
     # app = ModbusServerApp(meter_type="power",ip_address = "127.0.0.1", port = 5002)
     
     app.run()
