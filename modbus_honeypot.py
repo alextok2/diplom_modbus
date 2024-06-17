@@ -393,7 +393,7 @@ if __name__ == "__main__":
 
     
     
-    app = ModbusServerApp(meter_type="water",ip_address = "46.167.103.130", port = 502)
+    app = ModbusServerApp(meter_type="water",ip_address = "0.0.0.0", port = 502)
     # app = ModbusServerApp(meter_type="power",ip_address = "127.0.0.1", port = 5002)
     
     app.run()
