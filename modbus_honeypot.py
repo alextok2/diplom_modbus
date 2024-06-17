@@ -170,16 +170,17 @@ class ModbusServerApp:
 
                     
                     # Flow rate 202 30203 
-                    new_flow_rate = get_interpolated_instantaneous_flow_rate()
+                    new_flow_rate = get_interpolated_instantaneous_flow_rate() * 100
+                    print(new_flow_rate)
                     self.server.data_bank.set_input_registers(203, [new_flow_rate])
                     # Flow rate(%) 200 30201 
-                    procent_flow_rate = 100 * (new_flow_rate / 10)
+                    procent_flow_rate = 80 * (new_flow_rate / 100) 
                     self.server.data_bank.set_input_registers(201, [procent_flow_rate])
                     # Temperature 206 30207 
                     new_temperature = get_temperature_value()
                     self.server.data_bank.set_input_registers(207, [new_temperature])
                     # Temperature(%) 204 30205 
-                    procent_tempeature = 100 * (new_temperature - 20) / 80
+                    procent_tempeature = 80 * new_temperature / 100
                     self.server.data_bank.set_input_registers(205, [procent_tempeature])
                     # Total 212 30213 
                     total = new_flow_rate + new_temperature
@@ -200,7 +201,7 @@ class ModbusServerApp:
                     new_enthalpy = get_enthalpy_value(new_temperature, new_pressure)
                     self.server.data_bank.set_input_registers(219, [new_enthalpy])
                     # Velocity 226 30227 
-                    new_velocity = get_velocity_value()
+                    new_velocity = get_velocity_value() * 10
                     self.server.data_bank.set_input_registers(227, [new_velocity])
                     # Vortex frequency 224 30225 
                     new_vortex_frequency = get_vortex_frequency(new_velocity)
@@ -392,8 +393,8 @@ if __name__ == "__main__":
 
     
     
-    # app = ModbusServerApp(meter_type="water",ip_address = "127.0.0.1", port = 5002)
-    app = ModbusServerApp(meter_type="power",ip_address = "127.0.0.1", port = 5002)
+    app = ModbusServerApp(meter_type="water",ip_address = "127.0.0.1", port = 5002)
+    # app = ModbusServerApp(meter_type="power",ip_address = "127.0.0.1", port = 5002)
     
     app.run()
 

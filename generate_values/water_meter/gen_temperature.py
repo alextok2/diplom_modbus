@@ -85,7 +85,7 @@ def get_temperature_value():
         global BASELINE_TEMPERATURE
         BASELINE_TEMPERATURE = generate_temperature()
         temp2 = generate_temperature_reading(time2)
-        print(temp1, temp2)
+        # print(temp1, temp2)
     
     # Generate interpolated temperatures at each INTERPOLATION_INTERVAL
     interpolated_temperatures = [interpolate_temperature(time1, temp1, time2, temp2, t)
