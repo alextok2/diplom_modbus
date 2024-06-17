@@ -23,7 +23,7 @@ from generate_values.water_meter.gen_vortex_frequency import get_vortex_frequenc
 from generate_values.water_meter.gen_enthalpy import get_enthalpy_value
 
 
-from delete import get_value
+from generate_values.power_meter.gen_value import get_value
 
 
 def string_to_modbus_ascii(s):
