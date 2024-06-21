@@ -68,21 +68,21 @@ class MyDataBank(DataBank):
                 # print(address, type_register, default_value)
                 self.set_holding_registers(address, [default_value])
 
-        for register in input_registers:
-            address = register["ADDR"]
-            default_value = register["DEFAULT"]
+        for input_register in input_registers:
+            address = input_register["ADDR"]
+            default_value = input_register["DEFAULT"]
             
-            type_register = register["TYPE"]
+            type_register = input_register["TYPE"]
 
             if type_register == "ascii" or type_register == "string":
                 # print(address, type_register, default_value,string_to_modbus_ascii(default_value), hex_string_to_word_list(string_to_modbus_ascii(default_value) )) 
                 for word in hex_string_to_word_list(string_to_modbus_ascii(default_value)):
                     
-                    self.set_holding_registers(address, [word])
+                    self.set_input_registers(address, [word])
                     address += 1
             else:
                 # print(address, type_register, default_value)
-                self.set_holding_registers(address, [default_value])
+                self.set_input_registers(address, [default_value])
         self.set_coils(0, [True])
 
 
@@ -102,22 +102,52 @@ class MyDataBank(DataBank):
     
     
 
-    def set_validated_holding_registers(self, address, values):
+    # def set_validated_holding_registers(self, address, values):
 
-        for register in self.holding_registers:
+    #     for register in self.holding_registers:
+    #         if address == register["ADDR"]:
+    #             if "RANGE" in register:
+    #                 min_value, max_value = register["RANGE"]
+    #                 print(register["RANGE"],min_value, max_value, values)
+    #                 values = min(max(min_value, values), max_value)  
+    #                 self.set_holding_registers(address, [values])
+
+    #             elif "REGISTERS" in register:
+    #                 if values not in register["REGISTERS"]:
+    #                     print(register["REGISTERS"])
+    #                     values = register["DEFAULT"]
+    #                     self.set_holding_registers(address, [values])
+    #             break
+    def set_validated_holding_registers(self, address, value, holding_registers):
+        for register in holding_registers:
             if address == register["ADDR"]:
                 if "RANGE" in register:
-                    min_value, max_value = register["RANGE"]
-                    print(register["RANGE"],min_value, max_value, values)
-                    values = min(max(min_value, values), max_value)  
-                    self.set_holding_registers(address, [values])
+                    if not (register["RANGE"][0] <= value <= register["RANGE"][-1]):
+                        
+                        value = register["DEFAULT"]
+                        self.set_holding_registers(address, [value])
+
 
                 elif "REGISTERS" in register:
-                    if values not in register["REGISTERS"]:
-                        print(register["REGISTERS"])
-                        values = register["DEFAULT"]
-                        self.set_holding_registers(address, [values])
-                break
+                    if value not in register["REGISTERS"]:
+                        
+                        value = register["DEFAULT"]
+                        self.set_holding_registers(address, [value])
+
+
+                elif "RANGES" in register:
+                    valid = False
+                    for rng in register["RANGES"]:
+                        if value == rng:
+                            valid = True
+                            self.set_holding_registers(address, [rng])
+
+                    if not valid:
+                        
+                        value = register["DEFAULT"]
+                        self.set_holding_registers(address, [value])
+
+
 
         
 
@@ -138,9 +168,7 @@ class ModbusServerApp:
             from registers import holding_registers_power_meter, input_registers_power_meter
             self.mydatabank = MyDataBank(holding_registers_power_meter, input_registers_power_meter)
             self.server = ModbusServer(ip_address, port, no_block=True, data_bank=self.mydatabank)
-        # self.conn = sqlite3.connect('database copy 2.db')
-        # self.c = self.conn.cursor()
-        # self.create_logs_table()
+
 
     def configure_logger(self):
         logger = logging.getLogger()
@@ -150,15 +178,9 @@ class ModbusServerApp:
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 
-    def create_logs_table(self):
-        self.c.execute('''CREATE TABLE IF NOT EXISTS logs
-                        (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp REAL, input_registers BLOB)''')
 
-    # def store_input_registers(self, registers):
-    #     timestamp = time.time()
-    #     registers_json = json.dumps(registers)
-    #     self.c.execute("INSERT INTO logs (timestamp, input_registers) VALUES (?, ?)", (timestamp, registers_json))
-    #     self.conn.commit()
+
+
 
     def run(self):
         try:
@@ -232,6 +254,7 @@ class ModbusServerApp:
                     SAMPLING_INTERVAL_POWER = 600
                     SAMPLING_INTERVAL_ENERGY = 3600
                     SAMPLING_INTERVAL_ANGLE = 600
+
 
 
                     
@@ -368,17 +391,7 @@ class ModbusServerApp:
                     # print(f"Total P: {Total_P} W, Total Q: {Total_Q} var, Total S: {Total_S} VA, Total PF: {Total_PF}")
                     # print(f"Total AP energy: {Total_AP_energy} kWh, Total RP energy: {Total_RP_energy} kvarh")
                     # print(f"Phase angles: L1: {Phase_angle_L1}°, L2: {Phase_angle_L2}°, L3: {Phase_angle_L3}°")
-                # data = {
-                #     "flow_rate": new_flow_rate,
-                #     "temperature": new_temperature,
-                #     "pressure": new_pressure,
-                #     "density": new_density,
-                #     "board_temp": new_board_temp,
-                #     "velocity": new_velocity,
-                #     "vortex_frequency": new_vortex_frequency,
-                #     "enthalpy": new_enthalpy
-                # }
-                # self.store_input_registers(data)
+
                 
                 time.sleep(1)
 
@@ -393,301 +406,8 @@ if __name__ == "__main__":
 
     
     
-    app = ModbusServerApp(meter_type="water",ip_address = "0.0.0.0", port = 502)
-    # app = ModbusServerApp(meter_type="power",ip_address = "127.0.0.1", port = 5002)
+    app = ModbusServerApp(meter_type="water",ip_address = "0.0.0.0", port = 5002)
+    # app = ModbusServerApp(meter_type="power",ip_address = "0.0.0.0", port = 5002)
     
     app.run()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# # Configure the logger
-# logger.setLevel(logging.DEBUG)  # Set the desired log level
-# formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-
-# # Create a file handler and set the formatter
-# file_handler = logging.FileHandler('myapp.log')
-# file_handler.setFormatter(formatter)
-
-# # Add the file handler to the logger
-# logger.addHandler(file_handler)
-
-
-
-
-
-
-
-# start_time = time.time()
-
-# server_ip_address = "127.0.0.1"
-# server_port = 5002
-
-# mydatabank = MyDataBank(holding_registers_water_meter, input_registers)
-# server = ModbusServer(server_ip_address, server_port, no_block=True, data_bank=mydatabank)
-
-
-
-# try:
-#     server.start()
-#     print("[+] Server is working on: IP: " + server_ip_address + " and PORT:" + str(server_port) + "")
-#     print("[+] Type 'quit' to stop the server.")
-    
-#     srv_info = ModbusServer.ServerInfo()
-#     srv_info.recv_frame = ModbusServer.Frame()
-#     srv_info.recv_frame.mbap = ModbusServer.MBAP(unit_id=1)  # Set the desired unit_id
-    
-
-
-
-#     state = [0]
-#     i = 0
-#     while True:
-
-
-
-
-
-            
-
-
-
-#         new_flow_rate = get_interpolated_instantaneous_flow_rate()
-#         new_temperature = get_temperature_value()
-#         new_pressure = get_interpolated_pressure()
-#         new_density = get_density_value(new_temperature)
-        
-#         new_board_temp = get_board_temperature()
-#         new_velocity = get_velocity_value()
-#         new_vortex_frequency = get_vortex_frequency(new_velocity)
-#         new_enthalpy = get_enthalpy_value(new_temperature, new_pressure)
-
-#         # print(new_temperature, new_pressure, new_density, new_board_temp, new_velocity, new_vortex_frequency, new_enthalpy)
-#         # new_battery_level = round(100 - random.random(), 2)
-#         # print(new_flow_rate, voltage_VNL1, new_temperature, voltage_VNL2, new_pressure, voltage_VNL3, new_battery_level)
-        
-#         import sqlite3
-
-#         # Connect to SQLite3 database
-#         conn = sqlite3.connect('database copy 2.db')
-#         c = conn.cursor()
-
-#         # Create the "logs" table if it doesn't exist
-#         c.execute('''CREATE TABLE IF NOT EXISTS logs
-#                     (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp REAL, input_registers BLOB)''')
-
-#         # Function to store Input Registers in the database
-#         def store_input_registers(registers):
-            
-#             timestamp = time.time()
-#             # Convert the list to a JSON string before storing
-#             registers_json = json.dumps(registers)
-#             c.execute("INSERT INTO logs (timestamp, input_registers) VALUES (?, ?)", (timestamp, registers_json))
-#             conn.commit()
-
-#         # Function to store the data in the database
-#         data = {
-#             "flow_rate": new_flow_rate,
-#             "temperature": new_temperature,
-#             "pressure": new_pressure,
-#             "density": new_density,
-#             "board_temp": new_board_temp,
-#             "velocity": new_velocity,
-#             "vortex_frequency": new_vortex_frequency,
-#             "enthalpy": new_enthalpy
-#         }
-#         store_input_registers(data)
-
-
-
-
-#         server.data_bank.set_input_registers(0, [new_flow_rate, new_temperature, new_pressure, new_density, new_board_temp, new_velocity, new_vortex_frequency, new_enthalpy])
-
-#         sleep(1)
-
-# except Exception as e:
-#     logger.error('An error occurred: %s', str(e))
-# finally:
-#     server.stop()
-#     print("[-] Server stopped.")
-
-
-
-
-
-
-
-
-
-"""
-
-Control Coils: turning the water flow on or off.
-Status Coils: indicate whether a pump is currently running or not.
-Alarm Coils: signal when certain conditions are met, such as when a temperature or pressure threshold is exceeded.
-Interlock Coils:  prevent certain operations from occurring until certain conditions are met. For example, a coil could prevent a pump from starting until a valve is fully open.
-
-
-
-Coils (0xxxx):
-
-* Meter status flags (e.g., power status, error conditions)
-* Control commands (e.g., reset meter, start/stop flow)
-
-
-Discrete Inputs (1xxxx):
-
-* Tamper detection flags
-* Alarm conditions (e.g., low/high flow, leak detection)
-* Meter event indicators (e.g., reverse flow, air detection)
-
-
-Input Registers (3xxxx):
-
-* Instantaneous flow rate. Calculation formula: Velocity × water area × 3600 seconds = instantaneous flow rate (cubic meters/hour). 
-* Accumulated total consumption (e.g., cubic meters)
-* Temperature readings
-* Pressure readings
-* Battery level or voltage
-* Meter diagnostic values
-реле протока
-
-
-Flow rate
-Temperature
-Density
-pressure
-Vortex frequency
-Velocity
-Built-in temperature
-Board temperature
-
-
-
-
-
-
-
-
-
-does one of this input registers have wave representation in graph?
-
-Holding Registers (4xxxx):
-
-* Meter configuration parameters (e.g., pulse output settings, units)
-* Billing data (e.g., tariff rates, consumption periods)
-* Meter identification information (e.g., serial number, model)
-* Firmware version
-* User-configurable settings (e.g., alarm thresholds, date/time)
-* Accumulated consumption data (e.g., monthly, yearly totals)
-* Meter event logs or historical data
-
-
-
-
-
-
-
-
-
-
-
-To visualize the changes in the mentioned indicators on a graph, various mathematical functions can be employed. Here are some suggestions for each indicator:
-
-Instantaneous Flow Rate:
-
-Sine or cosine functions can be used to simulate a periodic fluctuation in the flow rate, resembling a wave-like pattern.
-For a more realistic simulation, you can combine multiple sine or cosine functions with different amplitudes, frequencies, and phase shifts to create a more complex waveform.
-
-
-Accumulated Total Consumption:
-
-A monotonically increasing function, such as a linear function or a quadratic function, can represent the continuous accumulation of consumption over time.
-If there are periods of constant consumption followed by periods of varying consumption, you can use piecewise linear or piecewise polynomial functions.
-
-
-Temperature Readings:
-
-Sine or cosine functions can be used to simulate diurnal or seasonal temperature variations.
-For more complex temperature patterns, you can combine multiple sine or cosine functions with different amplitudes, frequencies, and phase shifts.
-If you want to simulate temperature fluctuations influenced by external factors, you can use random noise functions or stochastic processes.
-
-
-Pressure Readings:
-
-If the pressure readings are relatively stable, you can use a constant function or a function with small fluctuations around a mean value.
-If there are periodic pressure variations, you can use sine or cosine functions.
-For more complex pressure patterns, you can combine multiple trigonometric functions or use piecewise functions.
-
-
-Battery Level or Voltage:
-
-A decreasing exponential function or a hyperbolic function can be used to simulate the gradual discharge of a battery over time.
-If there are charging events, you can use piecewise functions or step functions to represent the battery level increasing at specific intervals.
-
-
-Meter Diagnostic Values:
-
-If the diagnostic values are discrete and represent different states or conditions, you can use step functions or piecewise constant functions.
-For continuous diagnostic values, you can use various functions depending on the expected behavior, such as linear functions, polynomials, or trigonometric functions.
-
-
-
-It's important to note that the choice of mathematical functions will depend on the specific requirements and characteristics of the data you want to simulate. You may need to combine multiple functions or adjust their parameters to achieve the desired behavior.
-Additionally, you can introduce random noise or stochastic processes to simulate real-world variability and add more realistic fluctuations to the simulated data.
-"""
